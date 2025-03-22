@@ -1,11 +1,13 @@
-name: "Push Image Scan"
+name: "Scheduled Image Scan"
 
 on:
+  schedule:
+    - cron: "0 5 * * *"  # 毎日午前2時に実行
   push:
     branches:
       - main
-    paths-ignore:
-       - .github/workflows/scheduled-scan.yaml
+    paths:
+      - .github/workflows/scheduled-scan.yaml  # このファイルが更新された場合にのみ実行
 
 jobs:
   scan:
@@ -25,7 +27,7 @@ jobs:
         uses: docker/login-action@v1
         with:
           registry: ghcr.io
-          username: ${{ github.repository_owner }}
+          username: ${{ secrets.GITHUB_USERNAME }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Scan Docker Image with Trivy
@@ -36,24 +38,24 @@ jobs:
           exit-code: '1'
           severity: HIGH,CRITICAL
 
-      - name: Image Scan Success
+      - name: Notify Discord on Scan Success
         uses: rjstone/discord-webhook-notify@v1
         if: success()
         with:
           severity: info
-          details: Image Scan Completed!
+          details: "Scheduled scan completed successfully!"
           webhookUrl: ${{ secrets.DISCORD_WEBHOOK_URL }}
-      - name: Image Scan Failure
+      - name: Notify Discord on Scan Failure
         uses: rjstone/discord-webhook-notify@v1
         if: failure()
         with:
           severity: error
-          details: Image Scan Failed! Check PR Log.
+          details: "Scheduled scan failed! Please check the logs."
           webhookUrl: ${{ secrets.DISCORD_WEBHOOK_URL }}
-      - name: Image Scan Cancelled
+      - name: Notify Discord on Scan Cancelled
         uses: rjstone/discord-webhook-notify@v1
         if: cancelled()
         with:
           severity: warn
-          details: Image Scan Cancelled!
+          details: "Scheduled scan cancelled!"
           webhookUrl: ${{ secrets.DISCORD_WEBHOOK_URL }}
