@@ -11,13 +11,16 @@ on:
 jobs:
   scan:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        image:
+          - ghcr.io/eridon-pro/go-helloworld-3:latest
+          #- ghcr.io/eridon-pro/another-image:latest
+          # 他のイメージをここに追加
+
     steps:
       - name: Checkout scan config
         uses: actions/checkout@v2
-
-      # 例: 必要に応じてconfig/images.yamlを読み込む
-      #- name: Display scan configuration
-      #  run: cat config/images.yaml
 
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v1
@@ -29,8 +32,29 @@ jobs:
       - name: Scan Docker Image with Trivy
         uses: aquasecurity/trivy-action@master
         with:
-          # ここでは例として "latest" タグのイメージをスキャンしますが、configから対象を読み込むなど柔軟に変更可能です
-          image-ref: ghcr.io/eridon-pro/go-helloworld-3:latest
+          image-ref: ${{ matrix.image }}
           format: table
           exit-code: '1'
           severity: HIGH,CRITICAL
+
+      - name: Image Scan Success
+        uses: rjstone/discord-webhook-notify@v1
+        if: success()
+        with:
+          severity: info
+          details: Image Scan Completed!
+          webhookUrl: ${{ secrets.DISCORD_WEBHOOK_URL }}
+      - name: Image Scan Failure
+        uses: rjstone/discord-webhook-notify@v1
+        if: failure()
+        with:
+          severity: error
+          details: Image Scan Failed! Check PR Log.
+          webhookUrl: ${{ secrets.DISCORD_WEBHOOK_URL }}
+      - name: Image Scan Cancelled
+        uses: rjstone/discord-webhook-notify@v1
+        if: cancelled()
+        with:
+          severity: warn
+          details: Image Scan Cancelled!
+          webhookUrl: ${{ secrets.DISCORD_WEBHOOK_URL }}
