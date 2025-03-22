@@ -1,0 +1,36 @@
+name: "Push Image Scan"
+
+on:
+  push:
+    branches:
+      - main
+    # もしこのリポジトリ自体の変更だけを対象にする場合、特定のパスを除外することも可能です
+    #paths-ignore:
+    #   - .github/workflows/scheduled-scan.yaml
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout scan config
+        uses: actions/checkout@v2
+
+      # 例: 必要に応じてconfig/images.yamlを読み込む
+      #- name: Display scan configuration
+      #  run: cat config/images.yaml
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ secrets.GITHUB_USERNAME }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Scan Docker Image with Trivy
+        uses: aquasecurity/trivy-action@master
+        with:
+          # ここでは例として "latest" タグのイメージをスキャンしますが、configから対象を読み込むなど柔軟に変更可能です
+          image-ref: ghcr.io/eridon-pro/go-helloworld-3:latest
+          format: table
+          exit-code: '1'
+          severity: HIGH,CRITICAL
