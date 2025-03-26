@@ -2,7 +2,7 @@ name: "Scheduled Image Scan"
 
 on:
   schedule:
-    - cron: "0 5 * * *"  # 毎日午前5時に実行
+    - cron: "0 20 * * *"  # 毎日午前5時に実行
   push:
     branches:
       - main
